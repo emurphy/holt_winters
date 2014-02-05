@@ -32,6 +32,12 @@ module HoltWinters
     #              - 12 monthly
     #
     def forecast(y, alpha, beta, gamma, period, m)
+      analysis = analysis(y, alpha, beta, gamma, period, m)
+      return nil if analysis.nil?
+      analysis['predictions']
+    end
+
+    def analysis(y, alpha, beta, gamma, period, m)
       return nil if y.empty?
 
       seasons = y.size / period
@@ -48,6 +54,8 @@ module HoltWinters
       bt = Array.new(y.length, 0.0)
       it = Array.new(y.length, 0.0)
       ft = Array.new(y.length + m, 0.0)
+      dt = Array.new(y.length + m, 0.0)
+      analysis = Hash.new
 
       st[1] = a0
       bt[1] = b0
@@ -78,10 +86,16 @@ module HoltWinters
         # Calculate forecast
         if (i + m) >= period
           ft[i + m] = (st[i] + (m * bt[i])) * it[i - period + m]
+          # Calculate deviations
+          dt[i + m] = gamma * (y[i] - ft[i + m]).abs + (1 - gamma) * dt[i - m]
         end
+
+
       end
 
-      ft
+      analysis['predictions'] = ft
+      analysis['deviations'] = dt
+      analysis
     end
 
     # See: http://robjhyndman.com/researchtips/hw-initialization/
